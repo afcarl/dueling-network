@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 import sys, os
-import numpy as np
-from pprint import pprint
 from chainer import cuda, optimizers, gradient_check, Variable
 sys.path.append(os.path.split(os.getcwd())[0])
 from dueling_network import *
@@ -22,13 +20,14 @@ config.apply_batchnorm = True
 
 
 def backprop_check():
+	xp = cuda.cupy
 	duel = DuelingNetwork()
 
-	state = np.random.uniform(-1.0, 1.0, (2, config.rl_agent_history_length * config.ale_screen_channels, config.ale_scaled_screen_size[1], config.ale_scaled_screen_size[0])).astype(np.float32)
+	state = xp.random.uniform(-1.0, 1.0, (2, config.rl_agent_history_length * config.ale_screen_channels, config.ale_scaled_screen_size[1], config.ale_scaled_screen_size[0])).astype(xp.float32)
 	reward = [1, 0]
 	action = [3, 4]
 	episode_ends = [0, 0]
-	next_state = np.random.uniform(-1.0, 1.0, (2, config.rl_agent_history_length * config.ale_screen_channels, config.ale_scaled_screen_size[1], config.ale_scaled_screen_size[0])).astype(np.float32)
+	next_state = xp.random.uniform(-1.0, 1.0, (2, config.rl_agent_history_length * config.ale_screen_channels, config.ale_scaled_screen_size[1], config.ale_scaled_screen_size[0])).astype(xp.float32)
 
 	optimizer_conv = optimizers.Adam(alpha=config.rl_learning_rate, beta1=config.rl_gradient_momentum)
 	optimizer_conv.setup(duel.conv)
@@ -57,15 +56,14 @@ def grad_check():
 	advantage = Variable(xp.random.uniform(-1.0, 1.0, (2, 5)).astype(xp.float32))
 	mean = Variable(xp.random.uniform(-1.0, 1.0, (2,)).astype(xp.float32))
 	q = aggregate(value, advantage, mean)
-	gy = np
+	gy = xp
 	print q.data
 	for i in xrange(2):
 		for m in xrange(5):
-			print value.data[i] +  advantage.data[i, m] - mean.data[i]
+			print value.data[i] + advantage.data[i, m] - mean.data[i]
 
 	y_grad = xp.ones((2, 5)).astype(xp.float32)
 	gradient_check.check_backward(Aggregator(), (value.data, advantage.data, mean.data), y_grad, eps=1e-2)
-
 
 grad_check()
 	
