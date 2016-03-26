@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import chainer, math, copy, os
-from chainer import cuda, Variable, optimizers, serializers, function
+from chainer import cuda, Variable, optimizer, optimizers, serializers, function
 from chainer import functions as F
 from chainer import links as L
 from chainer.utils import type_check
@@ -135,16 +135,25 @@ class DuelingNetwork:
 		## RMSProp, ADAM, AdaGrad, AdaDelta, ...
 		## See http://docs.chainer.org/en/stable/reference/optimizers.html
 		self.optimizer_conv = optimizers.Adam(alpha=config.rl_learning_rate, beta1=config.rl_gradient_momentum)
-		self.optimizer_conv.setup(self.conv)
 		self.optimizer_fc_value = optimizers.Adam(alpha=config.rl_learning_rate, beta1=config.rl_gradient_momentum)
-		self.optimizer_fc_value.setup(self.fc_value)
 		self.optimizer_fc_advantage = optimizers.Adam(alpha=config.rl_learning_rate, beta1=config.rl_gradient_momentum)
+
+		self.optimizer_conv.setup(self.conv)
+		self.optimizer_fc_value.setup(self.fc_value)
 		self.optimizer_fc_advantage.setup(self.fc_value)
+
+		self.optimizer_conv.add_hook(optimizer.WeightDecay(0.0001))
+		self.optimizer_conv.add_hook(optimizer.GradientClipping(10.0))
+		self.optimizer_fc_value.add_hook(optimizer.WeightDecay(0.0001))
+		self.optimizer_fc_value.add_hook(optimizer.GradientClipping(10.0))
+		self.optimizer_fc_advantage.add_hook(optimizer.WeightDecay(0.0001))
+		self.optimizer_fc_advantage.add_hook(optimizer.GradientClipping(10.0))
+		
 		## To avoid memory allocation error
 		## おまじない
-		self.optimizer_conv.zero_grads()
-		self.optimizer_fc_value.zero_grads()
-		self.optimizer_fc_advantage.zero_grads()
+		# self.optimizer_conv.zero_grads()
+		# self.optimizer_fc_value.zero_grads()
+		# self.optimizer_fc_advantage.zero_grads()
 
 		# Replay Memory
 		## (state, action, reward, next_state, episode_ends)
