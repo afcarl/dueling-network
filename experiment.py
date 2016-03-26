@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 import rlglue.RLGlue as RLGlue
+from config import config
 
 max_episode = 10 ** 5
 total_episode = 0
@@ -121,7 +122,7 @@ def run_episode(training=True):
 		if total_reward > highscore:
 			highscore = total_reward
 			csv_training_highscore.append([learned_episode, highscore, total_minutes, epoch])
-		print "Episode:", learned_episode, "epoch:", epoch, "num_steps:", num_steps, "total_reward:", total_reward, "time:", sec, "sec",  "total_time:", total_minutes, "min"
+		print "Episode:", learned_episode, "epoch:", epoch, "num_steps:", num_steps, "total_reward:", total_reward, "time:", sec, "sec",  "total_time:", total_minutes, "min", "lr:", config.rl_learning_rate
 
 	return num_steps, total_reward
 

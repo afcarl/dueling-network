@@ -141,17 +141,8 @@ config.rl_replay_start_size = 5 * 10 ** 4
 config.rl_no_op_max = 30
 
 # Q-Network
-## The list of the number of channel for each hidden convolutional layer (input side -> output side)
-## The number of elements is the number of hidden layers.
-## Note:Be careful of adding too many layers.
-### We use each convolutional layer as pooling layer (Strided Convolution), therefore the size of the output feature maps will be zero when you add too many convolutional layers. 
-### For more details on Strided Convolution, see following papers:
-### [All Convolutional Net](http://arxiv.org/abs/1412.6806)
-### [DCGAN](http://arxiv.org/abs/1511.06434)
+## The list of the number of channels for each hidden convolutional layer (input side -> output side)
 ## Q関数を構成する畳み込みネットワークの隠れ層のチャネル数。
-## 要素の数がそのままレイヤー数になります。
-## 入力側から出力側に向かって設定してください。
-## レイヤーを通過するたび出力マップサイズは1/strideに縮小されるので、レイヤー数を増やしすぎると出力マップサイズが0になってしまうことに注意が必要です。
 config.q_conv_hidden_channels = [32, 64, 64]
 
 ## The list of stride for each hidden convolutional layer (input side -> output side)
@@ -171,7 +162,6 @@ config.q_conv_apply_batchnorm_to_input = False
 
 ## Single fully connected layer is placed on top of the convolutional network to convert output feature maps to vector.
 ## This vector is fed into fully connected layers.
-## It will be ignored when you eliminate the fully connected layer.
 ## 畳み込み層の最終的な出力マップをベクトルへ変換するときの次元数です。このベクトルは全結合層へ入力されます。
 ## 全結合層を使わない場合は無視されます。
 config.q_conv_output_vector_dimension = 512
@@ -197,7 +187,7 @@ config.q_fc_apply_dropout = False
 ## This overrides config.apply_batchnorm
 ## 全結合層への入力（つまり畳み込み層の出力）にバッチ正規化を適用するかどうか
 ## config.apply_batchnormの設定によらずこちらが優先されます
-config.q_fc_apply_batchnorm_to_input = False
+config.q_fc_apply_batchnorm_to_input = True
 
 ## Default: 1.0
 config.q_wscale = 1.0

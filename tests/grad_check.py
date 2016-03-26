@@ -65,5 +65,6 @@ def grad_check():
 	y_grad = xp.ones((2, 5)).astype(xp.float32)
 	gradient_check.check_backward(Aggregator(), (value.data, advantage.data, mean.data), y_grad, eps=1e-2)
 
+backprop_check()
 grad_check()
 	

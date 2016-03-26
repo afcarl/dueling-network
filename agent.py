@@ -11,7 +11,7 @@ from PIL import Image
 
 class Agent(RLGlueAgent):
 	def __init__(self):
-		self.last_action = Action()
+		self.last_action = 0
 		self.time_step = 0
 		self.total_time_step = 0
 		self.episode_step = 0
@@ -98,8 +98,7 @@ class Agent(RLGlueAgent):
 
 	def learn(self, reward, epsode_ends=False):
 		if self.policy_frozen is False:
-
-			self.duel.store_transition_in_replay_memory(self.reshape_state_to_conv_input(self.last_state), self.last_action.intArray[0], reward, self.reshape_state_to_conv_input(self.state), epsode_ends)
+			self.duel.store_transition_in_replay_memory(self.reshape_state_to_conv_input(self.last_state), self.last_action, reward, self.reshape_state_to_conv_input(self.state), epsode_ends)
 			if self.total_time_step <= config.rl_replay_start_size:
 				# A uniform random policy is run for 'replay_start_size' frames before learning starts
 				# 経験を積むためランダムに動き回るらしい。
@@ -131,18 +130,20 @@ class Agent(RLGlueAgent):
 		action, q_max, q_min = self.duel.eps_greedy(self.reshape_state_to_conv_input(self.state), self.exploration_rate)
 		return_action.intArray = [action]
 
-		self.last_action = copy.deepcopy(return_action)
-		self.last_state = self.state.copy()
+		self.last_action = return_action.intArray[0]
+		self.last_state = self.state
 
 		return return_action
 
 	def agent_step(self, reward, observation):
 		observed_screen = self.preprocess_screen(observation)
-		self.state = np.asanyarray([self.state[1], self.state[2], self.state[3], observed_screen], dtype=np.float32)
+		self.state = np.roll(self.state, 1, axis=0)
+		self.state[0] = observed_screen
 
 		########################### DEBUG ###############################
 		# if self.total_time_step % 500 == 0 and self.total_time_step != 0:
 		# 	self.dump_state()
+
 
 		self.learn(reward)
 		
@@ -152,14 +153,14 @@ class Agent(RLGlueAgent):
 		if self.time_step % config.rl_action_repeat == 0:
 			action, q_max, q_min = self.duel.eps_greedy(self.reshape_state_to_conv_input(self.state), self.exploration_rate)
 		else:
-			action = self.last_action.intArray[0]
+			action = self.last_action
 		return_action.intArray = [action]
 
 		self.dump_result(reward, q_max, q_min)
 
 		if self.policy_frozen is False:
-			self.last_action = copy.deepcopy(return_action)
-			self.last_state = self.state.copy()
+			self.last_action = return_action.intArray[0]
+			self.last_state = self.state
 			self.time_step += 1
 			self.total_time_step += 1
 
