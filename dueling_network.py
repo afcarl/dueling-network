@@ -149,12 +149,6 @@ class DuelingNetwork:
 		# self.optimizer_fc_advantage.add_hook(optimizer.WeightDecay(0.0001))
 		self.optimizer_fc_advantage.add_hook(optimizer.GradientClipping(10.0))
 		
-		## To avoid memory allocation error
-		## おまじない
-		# self.optimizer_conv.zero_grads()
-		# self.optimizer_fc_value.zero_grads()
-		# self.optimizer_fc_advantage.zero_grads()
-
 		# Replay Memory
 		## (state, action, reward, next_state, episode_ends)
 		shape_state = (config.rl_replay_memory_size, config.rl_agent_history_length * config.ale_screen_channels, config.ale_scaled_screen_size[1], config.ale_scaled_screen_size[0])
