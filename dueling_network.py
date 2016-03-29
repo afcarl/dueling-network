@@ -12,9 +12,7 @@ class ConvolutionalNetwork(chainer.Chain):
 	def __init__(self, **layers):
 		super(ConvolutionalNetwork, self).__init__(**layers)
 		self.activation_function = "elu"
-		self.projection_type = "fully_connection"
 		self.n_hidden_layers = 0
-		self.top_filter_size = (1, 1)
 		self.apply_batchnorm = True
 		self.apply_batchnorm_to_input = False
 
@@ -32,18 +30,6 @@ class ConvolutionalNetwork(chainer.Chain):
 					u = getattr(self, "batchnorm_%i" % i)(u, test=test)
 			chain.append(f(u))
 
-		if self.projection_type == "fully_connection":
-			chain.append(self.projection_layer(chain[-1]))
-
-		elif self.projection_type == "global_average_pooling":
-			batch_size = chain[-1].data.shape[0]
-			n_maps = chain[-1].data[0].shape[0]
-			chain.append(F.average_pooling_2d(chain[-1], self.top_filter_size))
-			chain.append(F.reshape(chain[-1], (batch_size, n_maps)))
-
-		else:
-			raise NotImplementedError()
-
 		return chain[-1]
 
 	def __call__(self, x, test=False):
@@ -55,10 +41,25 @@ class FullyConnectedNetwork(chainer.Chain):
 		self.n_hidden_layers = 0
 		self.activation_function = "elu"
 		self.apply_batchnorm_to_input = False
+		self.projection_type = "fully_connection"
+		self.conv_output_filter_size = (1, 1)
 
 	def forward_one_step(self, x, test):
 		f = activations[self.activation_function]
 		chain = [x]
+
+		# Convert feature maps to a vector
+		if self.projection_type == "fully_connection":
+			pass
+
+		elif self.projection_type == "global_average_pooling":
+			batch_size = chain[-1].data.shape[0]
+			n_maps = chain[-1].data[0].shape[0]
+			chain.append(F.average_pooling_2d(chain[-1], self.conv_output_filter_size))
+			chain.append(F.reshape(chain[-1], (batch_size, n_maps)))
+
+		else:
+			raise NotImplementedError()
 
 		# Hidden layers
 		for i in range(self.n_hidden_layers):
@@ -298,7 +299,6 @@ class DuelingNetwork:
 		self.optimizer_conv.update()
 
 	def compute_q_variable(self, state, test=False):
-		xp = cuda.cupy if config.use_gpu else np
 		output = self.conv(state, test=test)
 		value = self.fc_value(output, test=test)
 		advantage = self.fc_advantage(output, test=test)
@@ -306,7 +306,6 @@ class DuelingNetwork:
 		return aggregate(value, advantage, mean)
 
 	def compute_target_q_variable(self, state, test=True):
-		xp = cuda.cupy if config.use_gpu else np
 		output = self.target_conv(state, test=test)
 		value = self.target_fc_value(output, test=test)
 		advantage = self.target_fc_advantage(output, test=test)
@@ -369,14 +368,9 @@ def build_q_network(config):
 		conv_attributes["layer_%i" % i] = L.Convolution2D(n_in, n_out, config.q_conv_filter_sizes[i], stride=config.q_conv_strides[i], wscale=wscale)
 		conv_attributes["batchnorm_%i" % i] = L.BatchNormalization(n_out)
 
-	if config.q_conv_output_projection_type == "fully_connection":
-		conv_attributes["projection_layer"] = L.Linear(output_map_width * output_map_height * config.q_conv_hidden_channels[-1], config.q_conv_output_vector_dimension, wscale=wscale)
-
 	conv = ConvolutionalNetwork(**conv_attributes)
 	conv.n_hidden_layers = len(config.q_conv_hidden_channels)
 	conv.activation_function = config.q_conv_activation_function
-	conv.top_filter_size = (output_map_width, output_map_height)
-	conv.projection_type = config.q_conv_output_projection_type
 	conv.apply_batchnorm = config.apply_batchnorm
 	conv.apply_batchnorm_to_input = config.q_conv_apply_batchnorm_to_input
 	if config.use_gpu:
@@ -384,8 +378,15 @@ def build_q_network(config):
 
 	# Value network
 	fc_attributes = {}
-	fc_units = [(config.q_conv_output_vector_dimension, config.q_fc_hidden_units[0])]
-	fc_units += zip(config.q_fc_hidden_units[:-1], config.q_fc_hidden_units[1:])
+	if config.q_conv_output_projection_type == "fully_connection":
+		fc_units = [(output_map_width * output_map_height * config.q_conv_hidden_channels[-1], config.q_fc_hidden_units[0])]
+		fc_units += [(config.q_fc_hidden_units[0], config.q_fc_hidden_units[1])]
+	elif config.q_conv_output_projection_type == "global_average_pooling":
+		fc_units = [(config.q_conv_hidden_channels[-1], config.q_fc_hidden_units[0])]
+		fc_units += [(config.q_fc_hidden_units[0], config.q_fc_hidden_units[1])]
+	else:
+		raise NotImplementedError()
+	fc_units += zip(config.q_fc_hidden_units[1:-1], config.q_fc_hidden_units[2:])
 	fc_units += [(config.q_fc_hidden_units[-1], 1)]
 
 	for i, (n_in, n_out) in enumerate(fc_units):
@@ -398,13 +399,22 @@ def build_q_network(config):
 	fc_value.apply_batchnorm = config.apply_batchnorm
 	fc_value.apply_dropout = config.q_fc_apply_dropout
 	fc_value.apply_batchnorm_to_input = config.q_fc_apply_batchnorm_to_input
+	fc_value.conv_output_filter_size = (output_map_width, output_map_height)
+	fc_value.projection_type = config.q_conv_output_projection_type
 	if config.use_gpu:
 		fc_value.to_gpu()
 
 	# Action advantage network
 	fc_attributes = {}
-	fc_units = [(config.q_conv_output_vector_dimension, config.q_fc_hidden_units[0])]
-	fc_units += zip(config.q_fc_hidden_units[:-1], config.q_fc_hidden_units[1:])
+	if config.q_conv_output_projection_type == "fully_connection":
+		fc_units = [(output_map_width * output_map_height * config.q_conv_hidden_channels[-1], config.q_fc_hidden_units[0])]
+		fc_units += [(config.q_fc_hidden_units[0], config.q_fc_hidden_units[1])]
+	elif config.q_conv_output_projection_type == "global_average_pooling":
+		fc_units = [(config.q_conv_hidden_channels[-1], config.q_fc_hidden_units[0])]
+		fc_units += [(config.q_fc_hidden_units[0], config.q_fc_hidden_units[1])]
+	else:
+		raise NotImplementedError()
+	fc_units += zip(config.q_fc_hidden_units[1:-1], config.q_fc_hidden_units[2:])
 	fc_units += [(config.q_fc_hidden_units[-1], len(config.ale_actions))]
 	for i, (n_in, n_out) in enumerate(fc_units):
 		fc_attributes["layer_%i" % i] = L.Linear(n_in, n_out, wscale=wscale)
@@ -416,6 +426,8 @@ def build_q_network(config):
 	fc_advantage.apply_batchnorm = config.apply_batchnorm
 	fc_advantage.apply_dropout = config.q_fc_apply_dropout
 	fc_advantage.apply_batchnorm_to_input = config.q_fc_apply_batchnorm_to_input
+	fc_advantage.conv_output_filter_size = (output_map_width, output_map_height)
+	fc_advantage.projection_type = config.q_conv_output_projection_type
 	if config.use_gpu:
 		fc_advantage.to_gpu()
 

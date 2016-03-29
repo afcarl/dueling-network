@@ -14,13 +14,14 @@ config.rl_replay_start_size = 10 ** 4
 config.q_conv_hidden_channels = [32, 64, 64]
 config.q_conv_strides = [4, 2, 1]
 config.q_conv_filter_sizes = [8, 4, 3]
-config.q_conv_output_vector_dimension = 512
 config.q_fc_hidden_units = [256, 128]
 config.apply_batchnorm = True
+config.use_gpu = False
+config.q_conv_output_projection_type = "global_average_pooling"
 
 
 def backprop_check():
-	xp = cuda.cupy
+	xp = cuda.cupy if config.use_gpu else np
 	duel = DuelingNetwork()
 
 	state = xp.random.uniform(-1.0, 1.0, (2, config.rl_agent_history_length * config.ale_screen_channels, config.ale_scaled_screen_size[1], config.ale_scaled_screen_size[0])).astype(xp.float32)
@@ -51,7 +52,7 @@ def backprop_check():
 		print duel.fc_advantage.layer_2.W.data[0, 0]
 
 def grad_check():
-	xp = cuda.cupy
+	xp = cuda.cupy if config.use_gpu else np
 	value = Variable(xp.random.uniform(-1.0, 1.0, (2, 1)).astype(xp.float32))
 	advantage = Variable(xp.random.uniform(-1.0, 1.0, (2, 5)).astype(xp.float32))
 	mean = Variable(xp.random.uniform(-1.0, 1.0, (2,)).astype(xp.float32))
@@ -65,5 +66,6 @@ def grad_check():
 	y_grad = xp.ones((2, 5)).astype(xp.float32)
 	gradient_check.check_backward(Aggregator(), (value.data, advantage.data, mean.data), y_grad, eps=1e-2)
 
+# backprop_check()
 grad_check()
 	

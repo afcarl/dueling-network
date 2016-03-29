@@ -160,22 +160,16 @@ config.q_conv_activation_function = "elu"
 ## config.apply_batchnormの設定によらずこちらが優先されます
 config.q_conv_apply_batchnorm_to_input = False
 
-## Single fully connected layer is placed on top of the convolutional network to convert output feature maps to vector.
-## This vector is fed into fully connected layers.
-## 畳み込み層の最終的な出力マップをベクトルへ変換するときの次元数です。このベクトルは全結合層へ入力されます。
-## 全結合層を使わない場合は無視されます。
-config.q_conv_output_vector_dimension = 512
+## The number of units for each fully connected layer.
+## These are placed on top of the convolutional network.
+## 畳み込み層を接続する全結合層のユニット数を入力側から出力側に向かって並べてください。
+config.q_fc_hidden_units = [512, 256, 128]
 
 ## "global_average_pooling" or "fully_connection"
 ## Specify how to convert the output feature maps to vector
 ## For more details on Global Average Pooling, see following papers:
 ## Network in Network(http://arxiv.org/abs/1312.440)0
 config.q_conv_output_projection_type = "fully_connection"
-
-## The number of units for each fully connected layer.
-## These are placed on top of the convolutional network.
-## 畳み込み層を接続する全結合層のユニット数を入力側から出力側に向かって並べてください。
-config.q_fc_hidden_units = [256, 128]
 
 ## See activations.py
 config.q_fc_activation_function = "elu"
