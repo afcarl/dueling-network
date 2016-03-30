@@ -14,7 +14,7 @@ config.rl_replay_start_size = 10 ** 4
 config.q_conv_hidden_channels = [32, 64, 64]
 config.q_conv_strides = [4, 2, 1]
 config.q_conv_filter_sizes = [8, 4, 3]
-config.q_fc_hidden_units = [256, 128]
+config.q_fc_hidden_units = [128, 64]
 config.apply_batchnorm = True
 config.use_gpu = False
 config.q_conv_output_projection_type = "global_average_pooling"
@@ -66,6 +66,6 @@ def grad_check():
 	y_grad = xp.ones((2, 5)).astype(xp.float32)
 	gradient_check.check_backward(Aggregator(), (value.data, advantage.data, mean.data), y_grad, eps=1e-2)
 
-# backprop_check()
+backprop_check()
 grad_check()
 	

@@ -143,11 +143,8 @@ class DuelingNetwork:
 		self.optimizer_fc_value.setup(self.fc_value)
 		self.optimizer_fc_advantage.setup(self.fc_value)
 
-		# self.optimizer_conv.add_hook(optimizer.WeightDecay(0.0001))
 		self.optimizer_conv.add_hook(optimizer.GradientClipping(10.0))
-		# self.optimizer_fc_value.add_hook(optimizer.WeightDecay(0.0001))
 		self.optimizer_fc_value.add_hook(optimizer.GradientClipping(10.0))
-		# self.optimizer_fc_advantage.add_hook(optimizer.WeightDecay(0.0001))
 		self.optimizer_fc_advantage.add_hook(optimizer.GradientClipping(10.0))
 		
 		# Replay Memory

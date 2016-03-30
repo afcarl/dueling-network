@@ -158,12 +158,12 @@ config.q_conv_activation_function = "elu"
 ## This overrides config.apply_batchnorm
 ## 畳み込み層への入力（つまりゲーム画面の画像データ）にバッチ正規化を適用するかどうか
 ## config.apply_batchnormの設定によらずこちらが優先されます
-config.q_conv_apply_batchnorm_to_input = False
+config.q_conv_apply_batchnorm_to_input = True
 
 ## The number of units for each fully connected layer.
 ## These are placed on top of the convolutional network.
 ## 畳み込み層を接続する全結合層のユニット数を入力側から出力側に向かって並べてください。
-config.q_fc_hidden_units = [512, 256, 128]
+config.q_fc_hidden_units = [256, 128]
 
 ## "global_average_pooling" or "fully_connection"
 ## Specify how to convert the output feature maps to vector
