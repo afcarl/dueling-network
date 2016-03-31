@@ -35,7 +35,7 @@ def backprop_check():
 	optimizer_fc_value = optimizers.Adam(alpha=config.rl_learning_rate, beta1=config.rl_gradient_momentum)
 	optimizer_fc_value.setup(duel.fc_value)
 	optimizer_fc_advantage = optimizers.Adam(alpha=config.rl_learning_rate, beta1=config.rl_gradient_momentum)
-	optimizer_fc_advantage.setup(duel.fc_value)
+	optimizer_fc_advantage.setup(duel.fc_advantage)
 
 	for i in xrange(10000):
 		optimizer_conv.zero_grads()

@@ -130,7 +130,7 @@ class Agent(RLGlueAgent):
 		action, q_max, q_min = self.duel.eps_greedy(self.reshape_state_to_conv_input(self.state), self.exploration_rate)
 		return_action.intArray = [action]
 
-		self.last_action = return_action.intArray[0]
+		self.last_action = action
 		self.last_state = self.state
 
 		return return_action
@@ -155,11 +155,11 @@ class Agent(RLGlueAgent):
 		else:
 			action = self.last_action
 		return_action.intArray = [action]
+		self.last_action = action
 
 		self.dump_result(reward, q_max, q_min)
 
 		if self.policy_frozen is False:
-			self.last_action = return_action.intArray[0]
 			self.last_state = self.state
 			self.time_step += 1
 			self.total_time_step += 1

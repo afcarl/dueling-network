@@ -141,7 +141,7 @@ class DuelingNetwork:
 
 		self.optimizer_conv.setup(self.conv)
 		self.optimizer_fc_value.setup(self.fc_value)
-		self.optimizer_fc_advantage.setup(self.fc_value)
+		self.optimizer_fc_advantage.setup(self.fc_advantage)
 
 		self.optimizer_conv.add_hook(optimizer.GradientClipping(10.0))
 		self.optimizer_fc_value.add_hook(optimizer.GradientClipping(10.0))
